@@ -7,7 +7,7 @@ Repository for reproducibility results for the paper "Interpretable data-driven 
 
 To download the source code, you can clone it from the Github repository.
 ```console
-git clone git@github.com:cdchushig/cvd-risk-fs-ctgan.git
+git clone git@github.com:ai4healthurjc/cvd-risk-fs-ctgan.git
 ```
 
 Before installing libraries, ensuring that a Python virtual environment is activated (using conda o virtualenv). To install Python libraries run: 
@@ -16,13 +16,18 @@ Before installing libraries, ensuring that a Python virtual environment is activ
 pip install -r requirements.txt 
 ```
 
-## Download dermoscopy images from public datasets
+If you have any issue with skrebate, please install the following modified version:
+```console
+pip install git+https://github.com/cdchushig/scikit-rebate.git@1efbe530a46835c86f2e50f17342541a3085be9c 
+```
+
+## Download public datasets for conducting experiments
 
 Datasets with tabular data associated with T1D patients are publicly available in the following website:
 
 1. [Link to Steno dataset](https://www.sdcc.dk/english/research/projects/Pages/The-Steno-T1-Risk-Engine.aspx)
 
-After downloading data, you have to put files and folders in **data** folder.  
+After downloading data, you have to put files and folders in **data/raw** folder.  
 
 ## To obtain different results of data-driven models
 
