@@ -11,18 +11,15 @@ from pathlib import Path
 import datetime
 import tensorflow as tf
 import random as python_random
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from keras.callbacks import EarlyStopping
+from sklearn.preprocessing import StandardScaler
 import logging
 import coloredlogs
 
 import utils.consts as consts
-from fs.filter import Relief, Surf, PermutationImportance
+from fs.filter import Relief, Surf, PermutationImportance, MRMR
 from estimators.mlp import MLPKerasRegressor
 from utils.metrics import compute_mrae
-from utils.plotter import plot_learning_curves_several_hyperparameters, plot_fs_score, \
-    plot_performance_evolution_k_features
-# from utils.quality import join_real_synthetic_samples
+from utils.plotter import plot_fs_score, plot_performance_evolution_k_features
 
 
 logger = logging.getLogger(__name__)
@@ -105,8 +102,8 @@ def encode_albuminuria(x_train, y_train, x_test, y_test, v_col_names):
     df_x_train = pd.DataFrame(x_train, columns=v_col_names)
     df_x_test = pd.DataFrame(x_test, columns=v_col_names)
 
-    df_train_album_binary = pd.get_dummies(df_x_train.album, prefix='album')
-    df_test_album_binary = pd.get_dummies(df_x_test.album, prefix='album')
+    df_train_album_binary = pd.get_dummies(df_x_train.album, prefix='album', dtype=int)
+    df_test_album_binary = pd.get_dummies(df_x_test.album, prefix='album', dtype=int)
 
     df_x_train['album_0'] = df_train_album_binary['album_0.0']
     df_x_train['album_1'] = df_train_album_binary['album_1.0']
@@ -230,17 +227,14 @@ def get_hyperparams(estimator_name: str, num_features: int = 5, seed_value: int 
 def get_fs_method(fs_method_name, estimator_name, n_features, seed_value):
     if fs_method_name == 'relief':
         return Relief(return_scores=True)
-    elif fs_method_name == 'mrmr':
-        return MRMR(return_scores=True)
     elif fs_method_name == 'surf':
         return Surf(return_scores=True)
+    elif fs_method_name == 'mrmr':
+        return MRMR(return_scores=True)
     elif fs_method_name == 'pi':
         estimator, dict_param_grid_regressor, _ = get_hyperparams(estimator_name, num_features=n_features)
         return PermutationImportance(return_scores=True, seed_value=seed_value,
                                      estimator=estimator, param_grid_estimator=dict_param_grid_regressor)
-    elif fs_method_name == 'mrmr':
-        logger.info('Training with mrmr')
-        return MRMR(return_scores=True)
     elif fs_method_name == 'relief':
         logger.info('Training with relief')
         return Relief(return_scores=True)

@@ -4,6 +4,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
 from sklearn.inspection import permutation_importance
 from skrebate import ReliefF, MultiSURFstar
+from mrmr import mrmr_classif
 
 from utils.metrics import compute_mrae
 
@@ -21,7 +22,7 @@ class FSMethod(object):
 
     def fit(self, df_features: pd.DataFrame, y_label: np.array, k: int,
             list_categorical_vars: list, list_numerical_vars: list,
-            verbose):
+            verbose, n_jobs):
 
         self.df_features = df_features
 
@@ -71,12 +72,12 @@ class Relief(FSMethod):
 
     def fit(self, df_features: pd.DataFrame, y_label: np.array, k: int,
             list_categorical_vars: list, list_numerical_vars: list,
-            verbose=False):
+            verbose=False, n_jobs=1):
 
         self.df_features = df_features
         x_features = df_features.values
 
-        relief = ReliefF(n_features_to_select=k, n_neighbors=100)
+        relief = ReliefF(n_features_to_select=k, n_neighbors=100, n_jobs=n_jobs)
         relief.fit(x_features, y_label)
         x_selected_features, list_selected_features_indices, scores_sorted = relief.transform(x_features)
 
@@ -98,7 +99,7 @@ class Surf(FSMethod):
 
     def fit(self, df_features: pd.DataFrame, y_label: np.array, k: int,
             list_categorical_vars: list, list_numerical_vars: list,
-            verbose=False):
+            verbose=False, n_jobs=1):
 
         self.df_features = df_features
         x_features = df_features.values
@@ -126,7 +127,7 @@ class MRMR(FSMethod):
 
     def fit(self, df_features: pd.DataFrame, y_label: np.unique, k: int,
             list_categorical_vars: list, list_numerical_vars: list,
-            verbose=False):
+            verbose=False, n_jobs=1):
 
         self.df_features = df_features
         v_col_names = df_features.columns.values
@@ -135,7 +136,9 @@ class MRMR(FSMethod):
                                                          cat_features=list_categorical_vars,
                                                          cat_encoding='target',
                                                          return_scores=self.return_scores,
-                                                         show_progress=verbose)
+                                                         show_progress=verbose,
+                                                         n_jobs=n_jobs
+                                                         )
 
         v_scores_features = np.array(tuple_scores_df_filtered_features[1])
         v_scores_features_sorted = v_scores_features[v_scores_features.argsort()[::-1]]
@@ -160,7 +163,7 @@ class PermutationImportance(FSMethod):
 
     def fit(self, df_features: pd.DataFrame, y_label: np.unique, k: int,
             list_categorical_vars: list, list_numerical_vars: list,
-            verbose=False):
+            verbose=False, n_jobs=1):
 
         self.df_features = df_features
         x_features = df_features.values
@@ -170,7 +173,8 @@ class PermutationImportance(FSMethod):
                                param_grid=self.param_grid_estimator,
                                cv=3,
                                return_train_score=True,
-                               scoring=make_scorer(compute_mrae, greater_is_better=False)
+                               scoring=make_scorer(compute_mrae, greater_is_better=False),
+                               n_jobs=n_jobs
                                )
 
         grid_cv.fit(x_features, y_label)

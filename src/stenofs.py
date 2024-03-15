@@ -4,8 +4,6 @@ import argparse
 from utils.loader import load_preprocessed_dataset
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.model_selection import train_test_split, GridSearchCV
-import tensorflow as tf
-import random as python_random
 import utils.consts as consts
 from estimators.regression import compute_evolution_k_parameters
 import logging

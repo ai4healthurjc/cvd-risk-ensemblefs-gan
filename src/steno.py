@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import argparse
+from multiprocessing import cpu_count
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.model_selection import train_test_split, GridSearchCV
 from pathlib import Path
@@ -47,7 +48,8 @@ def perform_fs_method(fes,
                       type_over,
                       list_vars_numerical,
                       list_vars_categorical,
-                      seed_value
+                      seed_value,
+                      n_jobs=1
                       ):
 
     df_x_train = pd.DataFrame(x_train, columns=v_col_names)
@@ -66,8 +68,9 @@ def perform_fs_method(fes,
             v_selected_features = ['age', 'album_0', 'hba1c', 'sex', 'exercise', 'album_1', 'sbp', 'smoking', 'ldl',
                                    'dm_duration', 'egfr']
         else:
-            v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names, estimator_name, 'pi', type_over,
-                                                       list_vars_numerical, list_vars_categorical, seed_value)
+            v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names, estimator_name, 'pi',
+                                                       type_over, list_vars_numerical, list_vars_categorical,
+                                                       seed_value, n_jobs=n_jobs)
 
     elif fes == 'fes4':
         v_selected_features = perform_pso_fs(x_train, y_train, v_col_names, estimator_name)
@@ -75,13 +78,13 @@ def perform_fs_method(fes,
         v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names,
                                                    estimator_name, 'mrmr', type_over,
                                                    list_vars_numerical, list_vars_categorical,
-                                                   seed_value)
+                                                   seed_value, n_jobs=n_jobs)
 
     elif fes == 'fes6':
         v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names,
                                                    estimator_name, 'relief', type_over,
                                                    list_vars_numerical, list_vars_categorical,
-                                                   seed_value)
+                                                   seed_value, n_jobs=n_jobs)
 
     logger.info('fes: {}, selected-features: {}'.format(fes, v_selected_features))
 
@@ -104,7 +107,8 @@ def perform_fs_by_method(x_train,
                          type_over,
                          list_vars_numerical,
                          list_vars_categorical,
-                         seed_value=4242
+                         seed_value=4242,
+                         n_jobs=1
                          ):
 
     total_features = x_train.shape[1]
@@ -118,7 +122,10 @@ def perform_fs_by_method(x_train,
 
     for k_features in k_features_range:
         fs_method = get_fs_method(fs_method_name, estimator_name, n_features=k_features, seed_value=seed_value)
-        fs_method.fit(df_x_train, y_train, k_features, list_vars_categorical, list_vars_numerical)
+        fs_method.fit(df_x_train, y_train,
+                      k_features,
+                      list_vars_categorical, list_vars_numerical,
+                      verbose=False, n_jobs=n_jobs)
         df_x_train_selected_features, df_feature_scores = fs_method.extract_features()
         df_x_test_selected_features = df_x_test.loc[:, df_x_train_selected_features.columns.values]
 
@@ -147,10 +154,6 @@ def perform_fs_by_method(x_train,
     index_min_mrae = np.argmin(v_mrae)
     k_optimal = k_features_range[index_min_mrae]
     v_selected_features = df_feature_scores['var_name'].values[:k_optimal]
-
-    # print('mae: ', v_mae)
-    # print('mrae: ', v_mrae)
-    # print('k_optimal: ', k_optimal)
 
     logger.info('fs-method {}, k-optimal: {}'.format(fs_method_name, k_optimal))
 
@@ -272,7 +275,7 @@ def decode_ohe(m_ohe):
 
 def parse_arguments(parser):
     parser.add_argument('--estimator', default='dt', type=str)
-    parser.add_argument('--fes', default='fes4', type=str)
+    parser.add_argument('--fes', default='fes5', type=str)
     parser.add_argument('--type_over', default='wo', type=str)
     parser.add_argument('--batch_size', default=50, type=int)
     parser.add_argument('--verbose', default=False, type=bool)
@@ -284,6 +287,7 @@ def parse_arguments(parser):
     parser.add_argument('--generate_synthetic', default=False, type=bool)
     parser.add_argument('--join_synthetic', default=False, type=bool)
     parser.add_argument('--plot_learning_curve', default=False, type=bool)
+    parser.add_argument('--n_jobs', default=4, type=int)
     return parser.parse_args()
 
 
@@ -383,6 +387,10 @@ def get_best_estimator(estimator, df_x_train, y_train, seed_value):
 parser = argparse.ArgumentParser(description='Process representations.')
 args = parse_arguments(parser)
 
+n_procs = cpu_count()
+n_jobs = n_procs if args.n_jobs == -1 or args.n_jobs > n_procs else args.n_jobs
+logger.info('n_jobs selected: {}'.format(n_jobs))
+
 x_features, y_label, v_col_names, list_vars_categorical, list_vars_numerical = load_preprocessed_dataset(consts.BBDD_STENO, show_info=False)
 df_features = pd.DataFrame(x_features, columns=v_col_names)
 
@@ -439,7 +447,8 @@ for idx in np.arange(1, 6, 1):
                                                                                    args.type_over,
                                                                                    list_vars_numerical,
                                                                                    list_vars_categorical,
-                                                                                   seed_value=idx
+                                                                                   seed_value=idx,
+                                                                                   n_jobs=n_jobs
                                                                                    )
 
     if args.remove_age:
