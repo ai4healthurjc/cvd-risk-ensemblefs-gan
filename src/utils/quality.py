@@ -3,9 +3,9 @@ import pandas as pd
 import torch
 from pathlib import Path
 # from sdmetrics.reports.utils import get_column_plot
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sdmetrics.reports.single_table import QualityReport
+# from sklearn.preprocessing import StandardScaler, MinMaxScaler
 # from ctgan import CTGANSynthesizer, TVAESynthesizer
+from sdmetrics.reports.single_table import QualityReport
 from ctgan.synthesizers import CTGAN, TVAE
 import matplotlib.pyplot as plt
 import utils.consts as consts

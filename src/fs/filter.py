@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
-from skrebate import ReliefF, SURF, SURFstar, MultiSURF, MultiSURFstar
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer
+from sklearn.inspection import permutation_importance
+from skrebate import ReliefF, MultiSURFstar
+
+from utils.metrics import compute_mrae
 
 
 class FSMethod(object):
@@ -113,8 +118,6 @@ class Surf(FSMethod):
         self.df_feature_scores = df_feature_scores
 
 
-
-
 class MRMR(FSMethod):
 
     def __init__(self, return_scores):
@@ -145,5 +148,46 @@ class MRMR(FSMethod):
         m_scores = np.c_[v_selected_feature_names_sorted, v_scores_features_sorted]
         df_feature_scores = pd.DataFrame(m_scores, columns=['var_name', 'score'])
 
+        self.df_feature_scores = df_feature_scores
+
+
+class PermutationImportance(FSMethod):
+
+    def __init__(self, return_scores, seed_value, estimator, param_grid_estimator):
+        super().__init__(return_scores, seed_value)
+        self.estimator = estimator
+        self.param_grid_estimator = param_grid_estimator
+
+    def fit(self, df_features: pd.DataFrame, y_label: np.unique, k: int,
+            list_categorical_vars: list, list_numerical_vars: list,
+            verbose=False):
+
+        self.df_features = df_features
+        x_features = df_features.values
+        v_col_names = df_features.columns.values
+
+        grid_cv = GridSearchCV(estimator=self.estimator,
+                               param_grid=self.param_grid_estimator,
+                               cv=3,
+                               return_train_score=True,
+                               scoring=make_scorer(compute_mrae, greater_is_better=False)
+                               )
+
+        grid_cv.fit(x_features, y_label)
+        best_estimator = grid_cv.best_estimator_
+
+        result = permutation_importance(best_estimator, x_features, y_label,
+                                        n_repeats=50, random_state=self.seed_value)
+
+        v_feature_importance = result.importances_mean
+        v_feature_importance_sorted = v_feature_importance[v_feature_importance.argsort()][::-1]
+        v_col_names_sorted = v_col_names[v_feature_importance.argsort()[::-1]]
+        m_scores = np.c_[v_col_names_sorted, v_feature_importance_sorted]
+        df_feature_scores = pd.DataFrame(m_scores, columns=['var_name', 'score'])
+
+        list_selected_features_index = [df_features.columns.get_loc(var_name) for var_name in v_col_names_sorted]
+
+        self.selected_feature_indices = list_selected_features_index[:k]
+        self.selected_feature_names = list(v_col_names_sorted)
         self.df_feature_scores = df_feature_scores
 

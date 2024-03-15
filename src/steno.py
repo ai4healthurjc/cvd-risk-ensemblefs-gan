@@ -3,14 +3,14 @@ import pandas as pd
 import argparse
 from sklearn.metrics import mean_absolute_error, make_scorer
 from sklearn.model_selection import train_test_split, GridSearchCV
-# from sklearn_genetic import GAFeatureSelectionCV
 from pathlib import Path
 import datetime
 import logging
 import coloredlogs
 import shap
-from zoofs import ParticleSwarmOptimization
 import joblib
+from zoofs import ParticleSwarmOptimization
+
 from estimators.regression import get_hyperparams, train_fs_with_different_k_features, scale_features, encode_albuminuria, get_fs_method
 from utils.loader import load_preprocessed_dataset, save_model_estimator, load_model_estimator
 from utils.quality import generate_concatenate_real_synthetic_samples, join_real_synthetic_samples
@@ -62,21 +62,6 @@ def perform_fs_method(fes,
     elif fes == 'fes2':
         v_selected_features = np.array(list_features_fs2)
     elif fes == 'fes3':
-        # if regressor_name == 'knn' and type_over == 'wo':
-        #     v_selected_features = ['age', 'sex', 'exercise', 'hba1c']
-        # elif regressor_name == 'knn' and type_over == 'class':
-        #     v_selected_features = ['age', 'sex', 'exercise', 'hba1c']
-        # elif regressor_name == 'knn' and type_over == 'percentage':
-        #     v_selected_features = ['age', 'sex', 'exercise', 'hba1c']
-        # elif regressor_name == 'dt' and type_over == 'wo':
-        #     v_selected_features = ['age', 'hba1c', 'album_0', 'sbp', 'album_2']
-        # elif regressor_name == 'dt' and type_over == 'class':
-        #     v_selected_features = ['age', 'hba1c', 'album_0', 'sbp', 'album_2']
-        # elif regressor_name == 'dt' and type_over == 'percentage':
-        #     v_selected_features = ['age', 'hba1c', 'album_0', 'sbp', 'album_2']
-        # elif regressor_name == 'rf':
-        #     v_selected_features = ['age', 'hba1c', 'album_0', 'sbp', 'ldl', 'album_2', 'exercise', 'sex']
-        # elif regressor_name == 'mlp':
         if estimator_name == 'mlp':
             v_selected_features = ['age', 'album_0', 'hba1c', 'sex', 'exercise', 'album_1', 'sbp', 'smoking', 'ldl',
                                    'dm_duration', 'egfr']
@@ -86,18 +71,12 @@ def perform_fs_method(fes,
 
     elif fes == 'fes4':
         v_selected_features = perform_pso_fs(x_train, y_train, v_col_names, estimator_name)
-        logger.info('fes: {}, selected-features: {}'.format(fes, v_selected_features))
     elif fes == 'fes5':
         v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names,
                                                    estimator_name, 'mrmr', type_over,
                                                    list_vars_numerical, list_vars_categorical,
                                                    seed_value)
 
-        # df_features = pd.DataFrame(x_train, columns=v_col_names)
-        # fsm = MRMR(return_scores=True)
-        # fsm.fit(df_features, y_train, k_features, list_vars_categorical, list_vars_numerical)
-        # df_filtered, df_all_feature_scores = fsm.extract_features()
-        # v_selected_features = df_filtered.columns.values
     elif fes == 'fes6':
         v_selected_features = perform_fs_by_method(x_train, y_train, v_col_names,
                                                    estimator_name, 'relief', type_over,
@@ -191,9 +170,14 @@ def save_regression_metric(fs, regressor, type_over, mae_mean, mae_std, mrae_mea
         'mrae_std': mrae_std
     }
 
-    df_metrics_regression = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'metrics_regression.csv')))
-    df_metrics_regression = df_metrics_regression.append(dict_metric, ignore_index=True)
-    df_metrics_regression.to_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'metrics_regression.csv')), index=False)
+    path_metrics = Path.joinpath(consts.PATH_PROJECT_METRICS, 'metrics_regression.csv')
+    if path_metrics.exists():
+        df_metrics_regression = pd.read_csv(str(path_metrics))
+        df_metrics_regression = pd.concat([df_metrics_regression, pd.DataFrame([dict_metric])], ignore_index=True)
+        df_metrics_regression.to_csv(str(path_metrics), index=False)
+    else:
+        df_metrics_regression = pd.DataFrame([dict_metric])
+        df_metrics_regression.to_csv(str(path_metrics), index=False)
 
 
 def save_selected_features(v_selected_features, v_non_selected_features, fs_method_name, estimator_name, type_over, seed_value):
@@ -212,9 +196,15 @@ def save_selected_features(v_selected_features, v_non_selected_features, fs_meth
     dict_features.update(dict_selected_features)
     dict_features.update(dict_non_selected_features)
 
-    df_selected_features = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'selected_features.csv')))
-    df_selected_features = df_selected_features.append(dict_features, ignore_index=True)
-    df_selected_features.to_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'selected_features.csv')), index=False)
+    path_selected_features = Path.joinpath(consts.PATH_PROJECT_METRICS, 'selected_features.csv')
+
+    if path_selected_features.exists():
+        df_selected_features = pd.read_csv(str(path_selected_features))
+        df_selected_features = pd.concat([df_selected_features, pd.DataFrame([dict_features])], ignore_index=True)
+        df_selected_features.to_csv(str(path_selected_features), index=False)
+    else:
+        df_selected_features = pd.DataFrame([dict_features])
+        df_selected_features.to_csv(str(path_selected_features), index=False)
 
 
 def objective_function_topass(model, X_train, y_train, X_valid, y_valid):
@@ -238,10 +228,10 @@ def perform_pso_fs(x_train, y_train, v_col_names, estimator_name) -> np.array:
     return v_selected_features
 
 
-def perform_genetic_fs(x_train, y_train, v_col_names, estimator_name) -> np.array:
-
-    model_regressor, param_grid_regressor, list_dict_params = get_hyperparams(estimator_name, x_train.shape[1])
-    df_x_train = pd.DataFrame(x_train, columns=v_col_names)
+# def perform_genetic_fs(x_train, y_train, v_col_names, estimator_name) -> np.array:
+#
+#     model_regressor, param_grid_regressor, list_dict_params = get_hyperparams(estimator_name, x_train.shape[1])
+#     df_x_train = pd.DataFrame(x_train, columns=v_col_names)
 
     # ga_model = GeneticSelectionCV(estimator=model_regressor, cv=5, verbose=1,
     #                               scoring=make_scorer(compute_mrae, greater_is_better=False),
@@ -255,24 +245,24 @@ def perform_genetic_fs(x_train, y_train, v_col_names, estimator_name) -> np.arra
     # ga_model = ga_model.fit(x_train, y_train)
     # v_selected_features = df_x_train.loc[:, ga_model.support_].columns.values
 
-    ga_model = GAFeatureSelectionCV(
-        estimator=model_regressor,
-        cv=5,
-        scoring=make_scorer(compute_mrae, greater_is_better=False),
-        population_size=30,
-        generations=20,
-        n_jobs=-1,
-        verbose=True,
-        algorithm='eaSimple',
-        # keep_top_k=2,
-        # elitism=True,
-    )
-
-    ga_model.fit(x_train, y_train)
-    v_selected_features_idx = ga_model.best_features_
-    v_selected_features = df_x_train.loc[:, v_selected_features_idx].columns.values
-
-    return v_selected_features
+    # ga_model = GAFeatureSelectionCV(
+    #     estimator=model_regressor,
+    #     cv=5,
+    #     scoring=make_scorer(compute_mrae, greater_is_better=False),
+    #     population_size=30,
+    #     generations=20,
+    #     n_jobs=-1,
+    #     verbose=True,
+    #     algorithm='eaSimple',
+    #     keep_top_k=2,
+    #     elitism=True,
+    # )
+    #
+    # ga_model.fit(x_train, y_train)
+    # v_selected_features_idx = ga_model.best_features_
+    # v_selected_features = df_x_train.loc[:, v_selected_features_idx].columns.values
+    #
+    # return v_selected_features
 
 
 def decode_ohe(m_ohe):
@@ -390,13 +380,6 @@ def get_best_estimator(estimator, df_x_train, y_train, seed_value):
     return best_estimator, grid_cv.best_params_, model_estimator, list_dict_params
 
 
-def show_regression_metrics():
-    df_metrics_regression = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'metrics_regression.csv')))
-    print(df_metrics_regression)
-    gk = df_metrics_regression.groupby(['fs', 'estimator', 'type_over'])
-    print(gk.apply(lambda a: a[:]))
-
-
 parser = argparse.ArgumentParser(description='Process representations.')
 args = parse_arguments(parser)
 
@@ -406,8 +389,6 @@ df_features = pd.DataFrame(x_features, columns=v_col_names)
 x_features = df_features.values
 list_vars_categorical.remove('album')
 list_vars_categorical.extend(['album_0', 'album_1', 'album_2'])
-
-# show_regression_metrics()
 
 list_mae = []
 list_mrae = []

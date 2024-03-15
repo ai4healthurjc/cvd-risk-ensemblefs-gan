@@ -61,7 +61,6 @@ list_vars_categorical.remove('album')
 list_vars_categorical.extend(['album_0', 'album_1', 'album_2'])
 
 plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=1)
-print(x)
 plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=2)
 plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=3)
 plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=4)

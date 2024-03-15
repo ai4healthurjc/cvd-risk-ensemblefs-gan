@@ -176,8 +176,8 @@ def load_preprocessed_dataset(bbdd_name: str, show_info=False) -> (np.array, np.
         logger.info('n_samples: {}, n_features: {}'.format(df_features.shape[0], df_features.shape[1]))
         logger.info('Classes: {}, # samples: {}'.format(np.unique(y_label, return_counts=True)[0],
                                                         np.unique(y_label, return_counts=True)[1]))
-        logger.info('List of numerical features {}, total: {}'.format(list_vars_numerical, len(list_vars_numerical)))
-        logger.info('List of categorical features {}, total: {}'.format(list_vars_categorical, len(list_vars_categorical)))
+        logger.info('List of numerical features {}, #{}'.format(list_vars_numerical, len(list_vars_numerical)))
+        logger.info('List of categorical features {}, #{}'.format(list_vars_categorical, len(list_vars_categorical)))
 
     return m_features, y_label, v_column_names, list_vars_categorical, list_vars_numerical
     # return m_features, y_label, v_column_names

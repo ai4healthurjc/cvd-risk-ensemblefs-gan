@@ -1,17 +1,13 @@
 import numpy as np
 import pandas as pd
-# from fs.filter.mrmr import MRMR
-from fs.filter import Relief, Surf
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_absolute_error, make_scorer
-from utils.metrics import compute_mrae
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import Ridge, ElasticNet
 from sklearn.svm import SVR
 from pathlib import Path
-import utils.consts as consts
 import datetime
 import tensorflow as tf
 import random as python_random
@@ -19,7 +15,11 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from keras.callbacks import EarlyStopping
 import logging
 import coloredlogs
+
+import utils.consts as consts
+from fs.filter import Relief, Surf, PermutationImportance
 from estimators.mlp import MLPKerasRegressor
+from utils.metrics import compute_mrae
 from utils.plotter import plot_learning_curves_several_hyperparameters, plot_fs_score, \
     plot_performance_evolution_k_features
 # from utils.quality import join_real_synthetic_samples

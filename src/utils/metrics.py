@@ -322,8 +322,8 @@ def compute_mae(y_real: np.ndarray, y_pred: np.ndarray):
 
 
 def compute_mrae(y_real, y_pred):
-    epison = 1e-6
-    difference = np.abs(y_real - y_pred) / (y_real + epison)
+    epsilon = 1e-6
+    difference = np.abs(y_real - y_pred) / (y_real + epsilon)
     return np.mean(difference)
 
 

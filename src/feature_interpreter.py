@@ -16,7 +16,9 @@ from utils.loader import load_preprocessed_dataset, save_model_estimator, load_m
 from utils.quality import generate_concatenate_real_synthetic_samples, join_real_synthetic_samples
 from utils.metrics import compute_mrae, compute_mae
 from utils.plotter import plot_learning_curve_mlp, plot_learning_curves_several_hyperparameters, \
-    plot_scatter_real_pred, plot_hists_comparison, plot_ale_features
+    plot_scatter_real_pred, plot_hists_comparison, plot_gridsearch_results, \
+    plot_performance_evolution_k_features, plot_quality_scores, plot_area_cis_average, plot_heatmap_selected_features_fes,\
+    plot_fs_score, plot_shap_mean, plot_scatter_from_model
 import utils.consts as consts
 
 
@@ -26,6 +28,13 @@ coloredlogs.install(level='DEBUG', logger=logger)
 
 list_regression_metrics = ['mean_squared_error', 'mean_absolute_error', 'compute_mrae']
 list_features_fs2 = ['age', 'sex', 'smoking', 'exercise', 'dm_duration']
+
+
+def show_regression_metrics():
+    df_metrics_regression = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'metrics_regression.csv')))
+    print(df_metrics_regression)
+    gk = df_metrics_regression.groupby(['fs', 'estimator', 'type_over'])
+    print(gk.apply(lambda a: a[:]))
 
 
 def parse_arguments(parser):
@@ -50,10 +59,13 @@ args = parse_arguments(parser)
 
 x_features, y_label, v_col_names, list_vars_categorical, list_vars_numerical = load_preprocessed_dataset(consts.BBDD_STENO, show_info=False)
 df_features = pd.DataFrame(x_features, columns=v_col_names)
-
-print(df_features)
-
-x_features = df_features.values
 list_vars_categorical.remove('album')
 list_vars_categorical.extend(['album_0', 'album_1', 'album_2'])
+
+show_regression_metrics()
+
+list_seed_values = [1, 2, 3, 4, 5]
+
+for seed in list_seed_values:
+    plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=1)
 
