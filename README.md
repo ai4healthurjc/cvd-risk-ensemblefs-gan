@@ -33,15 +33,15 @@ After downloading data, you have to put files and folders in **data/raw** folder
 
 To train models for CVD risk prediction:
 ```console
-python src/steno.py --join_synthetic=False --type_over='percentage' --fes='fes1' --estimator='dt' --flag_save_figure=True --plot_scatter_hists=True
+python src/steno.py --join_synthetic=False --type_over='wo' --fes='fes1' --estimator='dt' --flag_save_figure=True --plot_scatter_hists=True
 ```
 
 To train models for CVD risk prediction with different FES:
 ```console
-python src/stenofs.py --fs='fes3' --estimator='dt' --type_over='percentage' --cuda=True --train_ctgan=True
+python src/steno_interpreter.py --estimator='dt' --fes='fes1' --type_over='wo' --type_cvd='high'
 ```
 
 To visualize results from trained models for CVD risk prediction:
 ```console
-python src/feature_interpreter.py --estimator='dt' --fes='fes1' --type_over=='wo' --type_cvd='high'
+python src/feature_interpreter.py --estimator='dt' --fes='fes1' --type_over='wo'
 ```
