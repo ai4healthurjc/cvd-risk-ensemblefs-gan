@@ -20,10 +20,8 @@ from utils.plotter import plot_learning_curve_mlp, plot_learning_curves_several_
     plot_scatter_real_pred, plot_hists_comparison, plot_ale_features
 import utils.consts as consts
 
-
 logger = logging.getLogger(__name__)
 coloredlogs.install(level='DEBUG', logger=logger)
-
 
 list_regression_metrics = ['mean_squared_error', 'mean_absolute_error', 'compute_mrae']
 list_features_fs2 = ['age', 'sex', 'smoking', 'exercise', 'dm_duration']
@@ -229,43 +227,6 @@ def perform_pso_fs(x_train, y_train, v_col_names, estimator_name) -> np.array:
     v_selected_features = algo_object.best_feature_list
 
     return v_selected_features
-
-
-# def perform_genetic_fs(x_train, y_train, v_col_names, estimator_name) -> np.array:
-#
-#     model_regressor, param_grid_regressor, list_dict_params = get_hyperparams(estimator_name, x_train.shape[1])
-#     df_x_train = pd.DataFrame(x_train, columns=v_col_names)
-
-    # ga_model = GeneticSelectionCV(estimator=model_regressor, cv=5, verbose=1,
-    #                               scoring=make_scorer(compute_mrae, greater_is_better=False),
-    #                               max_features=12, n_population=300, crossover_proba=0.5,
-    #                               mutation_proba=0.2, n_generations=50,
-    #                               crossover_independent_proba=0.5,
-    #                               mutation_independent_proba=0.04,
-    #                               tournament_size=3, n_gen_no_change=10,
-    #                               caching=True, n_jobs=-1)
-
-    # ga_model = ga_model.fit(x_train, y_train)
-    # v_selected_features = df_x_train.loc[:, ga_model.support_].columns.values
-
-    # ga_model = GAFeatureSelectionCV(
-    #     estimator=model_regressor,
-    #     cv=5,
-    #     scoring=make_scorer(compute_mrae, greater_is_better=False),
-    #     population_size=30,
-    #     generations=20,
-    #     n_jobs=-1,
-    #     verbose=True,
-    #     algorithm='eaSimple',
-    #     keep_top_k=2,
-    #     elitism=True,
-    # )
-    #
-    # ga_model.fit(x_train, y_train)
-    # v_selected_features_idx = ga_model.best_features_
-    # v_selected_features = df_x_train.loc[:, v_selected_features_idx].columns.values
-    #
-    # return v_selected_features
 
 
 def decode_ohe(m_ohe):

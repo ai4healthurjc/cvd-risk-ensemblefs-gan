@@ -4,7 +4,6 @@ from pathlib import Path
 import argparse
 import joblib
 import shap
-import seaborn as sns
 from shap import TreeExplainer, Explanation
 from shap.plots import waterfall
 from utils.loader import load_train_test_partitions

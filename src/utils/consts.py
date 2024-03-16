@@ -38,3 +38,34 @@ VALIDATION_SIZE_PROPORTION = 0.2
 
 LISTS_BBDD_CLINICAL = ['fram', 'steno']
 LISTS_BBDD_GENERAL = ['dermat', 'heart']
+
+
+DICT_MAP_ORIGINAL_FEATURES = {
+    'age': 'Age',
+    'album_0': 'Normoalbuminuria',
+    'album_1': 'Microalbuminuria',
+    'album_2': 'Macroalbuminuria',
+    'dm_duration': 'DM Duration',
+    'egfr': 'EGFR',
+    'hba1c': 'Hba1c',
+    'exercise': 'Exercise',
+    'ldl': 'LDL',
+    'sbp': 'SBP',
+    'sex': 'Sex',
+    'smoking': 'Smoking'
+}
+
+DICT_MEASURES_ORIGINAL_FEATURES = {
+    'age': 'years',
+    'sex': '',
+    'dm_duration': 'years',
+    'sbp': 'mmHg',
+    'ldl': 'mmol/l',
+    'hba1c': 'mmol/mol',
+    'egfr': 'ml/min/1.72$m^{2}$',
+    'smoking': '',
+    'exercise': '',
+    'album_0': '',
+    'album_1': '',
+    'album_2': ''
+}

@@ -93,8 +93,10 @@ def compute_evolution_k_parameters(df_features, y_label, v_col_names,
         df_metrics_total = df_metrics_total.append(df_metrics_by_fs, ignore_index=True)
         print(df_metrics_total)
 
-    plot_performance_evolution_k_features(df_metrics_total, 'mae', estimator_name, fs_method_name, type_over, flag_save_figure=True)
-    plot_performance_evolution_k_features(df_metrics_total, 'mrae', estimator_name, fs_method_name, type_over, flag_save_figure=True)
+    plot_performance_evolution_k_features(df_metrics_total, 'mae', estimator_name, fs_method_name, type_over,
+                                          flag_save_figure=True)
+    plot_performance_evolution_k_features(df_metrics_total, 'mrae', estimator_name, fs_method_name, type_over,
+                                          flag_save_figure=True)
 
 
 def encode_albuminuria(x_train, y_train, x_test, y_test, v_col_names):

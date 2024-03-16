@@ -1,24 +1,13 @@
 import numpy as np
 import pandas as pd
 import argparse
-from sklearn.metrics import mean_absolute_error, make_scorer
-from sklearn.model_selection import train_test_split, GridSearchCV
-# from sklearn_genetic import GAFeatureSelectionCV
 from pathlib import Path
-import datetime
 import logging
 import coloredlogs
-import shap
-from zoofs import ParticleSwarmOptimization
-import joblib
-from estimators.regression import get_hyperparams, train_fs_with_different_k_features, scale_features, encode_albuminuria, get_fs_method
-from utils.loader import load_preprocessed_dataset, save_model_estimator, load_model_estimator
-from utils.quality import generate_concatenate_real_synthetic_samples, join_real_synthetic_samples
-from utils.metrics import compute_mrae, compute_mae
-from utils.plotter import plot_learning_curve_mlp, plot_learning_curves_several_hyperparameters, \
-    plot_scatter_real_pred, plot_hists_comparison, plot_gridsearch_results, \
-    plot_performance_evolution_k_features, plot_quality_scores, plot_area_cis_average, plot_heatmap_selected_features_fes,\
-    plot_fs_score, plot_shap_mean, plot_scatter_from_model
+from utils.loader import load_train_test_partitions
+
+from utils.loader import load_preprocessed_dataset, load_model_estimator, get_categorical_numerical_names
+from utils.plotter import plot_ale_features, plot_all_hists_dataset
 import utils.consts as consts
 
 
@@ -42,30 +31,41 @@ def parse_arguments(parser):
     parser.add_argument('--fes', default='fes4', type=str)
     parser.add_argument('--type_over', default='wo', type=str)
     parser.add_argument('--batch_size', default=50, type=int)
+    parser.add_argument('--seed_value', default=1, type=int)
     parser.add_argument('--verbose', default=False, type=bool)
     parser.add_argument('--plot_ale', default=False, type=bool)
-    parser.add_argument('--remove_age', default=False, type=bool)
-    parser.add_argument('--plot_scatter_hists', default=False, type=bool)
     parser.add_argument('--flag_save_figure', default=True, type=bool)
-    parser.add_argument('--train_shap', default=False, type=bool)
-    parser.add_argument('--generate_synthetic', default=False, type=bool)
-    parser.add_argument('--join_synthetic', default=False, type=bool)
-    parser.add_argument('--plot_learning_curve', default=False, type=bool)
     return parser.parse_args()
 
 
 parser = argparse.ArgumentParser(description='Process representations.')
 args = parse_arguments(parser)
 
-x_features, y_label, v_col_names, list_vars_categorical, list_vars_numerical = load_preprocessed_dataset(consts.BBDD_STENO, show_info=False)
+x_features, y_label, v_col_names, _, _ = load_preprocessed_dataset(consts.BBDD_STENO, show_info=False)
 df_features = pd.DataFrame(x_features, columns=v_col_names)
-list_vars_categorical.remove('album')
-list_vars_categorical.extend(['album_0', 'album_1', 'album_2'])
+plot_all_hists_dataset(df_features, flag_save_figure=True)
 
 show_regression_metrics()
 
-list_seed_values = [1, 2, 3, 4, 5]
+idx = args.seed_value
 
-for seed in list_seed_values:
-    plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=1)
+filename_pattern = '{}_{}_{}_{}'.format(args.fes, args.type_over, args.estimator, idx)
 
+seed = np.random.seed(idx)
+rng = np.random.RandomState(idx)
+
+df_x_train, y_train, df_x_test, y_test, df_x_train_raw, df_x_test_raw, _ = load_train_test_partitions(filename_pattern, seed_value=idx)
+
+list_vars_categorical, list_vars_numerical = get_categorical_numerical_names(df_x_train, '')
+
+model_estimator = load_model_estimator(args.fes, args.type_over,
+                                       args.estimator, idx,
+                                       df_x_train.values, y_train)
+
+v_removed_features = np.array([])
+
+plot_ale_features(df_x_test, v_removed_features, model_estimator, df_x_test_raw,
+                  list_vars_numerical, list_vars_categorical,
+                  args.estimator, args.fes, args.type_over, seed_value=idx)
+
+# plot_scatter_from_model(args.fs, args.type_over, args.estimator, seed_value=idx)

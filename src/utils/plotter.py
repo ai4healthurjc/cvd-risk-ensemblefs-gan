@@ -5,19 +5,26 @@ import math
 import joblib
 # import seaborn as sns
 from pathlib import Path
-# from PyALE import ale
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+from PyALE import ale
+# import matplotlib
+# matplotlib.use('Agg')
 # from mlxtend.plotting import plot_sequential_feature_selection
 # from yellowbrick.model_selection import ValidationCurve
 # import matplotlib.patches as patches
 # from sklearn.model_selection import validation_curve
+import seaborn as sns
+import matplotlib.pyplot as plt
 import datetime
 import itertools
-from utils.metrics import compute_mrae, compute_mae
+import logging
+import coloredlogs
 from utils.loader import load_train_test_partitions, load_model_estimator
 import utils.consts as consts
+
+logger = logging.getLogger(__name__)
+coloredlogs.install(level='DEBUG', logger=logger)
+logging.getLogger('matplotlib.font_manager').disabled = True
+logging.getLogger('PIL.PngImagePlugin').disabled = True
 
 
 def plot_confusion_matrix(cm, class_names, flag_save_figure, cmap=plt.cm.Blues):
@@ -427,7 +434,10 @@ def plot_learning_curve_hyperparameter(x_train, y_train, regressor_name, model_r
 
 def plot_corresponding_ale_categorical_feature(df_ale_cat, var_name,
                                                estimator_name, fes,
-                                               type_over, seed_value, flag_save_figure=True):
+                                               type_over, seed_value,
+                                               ax,
+                                               flag_save_figure=True
+                                               ):
 
     df_ale_cat = df_ale_cat.reset_index()
     first_std = df_ale_cat.iloc[0, 1]
@@ -436,14 +446,22 @@ def plot_corresponding_ale_categorical_feature(df_ale_cat, var_name,
 
     save_ci_area_csv(df_ale_cat, var_name, fes, type_over, estimator_name, seed_value)
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 3.1))
+    dict_feature_names = consts.DICT_MAP_ORIGINAL_FEATURES
+    dict_measures = consts.DICT_MEASURES_ORIGINAL_FEATURES
+
+    # fig, ax = plt.subplots(1, 1, figsize=(5, 3.1))
 
     ax.bar(df_ale_cat[var_name], df_ale_cat['eff'], width=0.4, color='blue', alpha=0.0)
     ax.set_ylabel('', fontsize=16)
 
     ax2 = ax.twinx()
     ax2.bar(df_ale_cat[var_name], df_ale_cat['size'], width=0.4, color='blue', alpha=0.3)
-    ax2.set_ylabel('Size', fontsize=16)
+    ax2.set_yticks([])
+    # ax2.set_ylabel('Size', fontsize=16)
+
+    plt.title(dict_feature_names[var_name])
+    ax.set_xlabel(dict_measures[var_name], fontsize=12)
+    ax.set_ylabel('Effect on prediction', fontsize=12)
 
     ax.plot([df_ale_cat.iloc[0, 0], df_ale_cat.iloc[1, 0]],
             [df_ale_cat.iloc[0, 1], df_ale_cat.iloc[1, 1]],
@@ -457,21 +475,21 @@ def plot_corresponding_ale_categorical_feature(df_ale_cat, var_name,
         ax.errorbar(row[var_name], row['eff'], yerr, fmt='o',
                     lw=2, capsize=4, color='black')
 
-    ax.set_xlabel(var_name, fontsize=12)
+    # ax.set_xlabel(var_name, fontsize=12)
     ax.set_xticks([0, 1])
     plt.grid(alpha=0.5, linestyle='--')
-    fig.tight_layout()
+    # fig.tight_layout()
 
-    if flag_save_figure:
-        fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'ale',
-                                      '{}_{}_{}_ale_{}_seed_{}.png'.format(estimator_name,
-                                                                           type_over,
-                                                                           fes,
-                                                                           var_name,
-                                                                           seed_value))))
-        plt.close()
-    else:
-        plt.show()
+    # if flag_save_figure:
+    #     fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'ale',
+    #                                   '{}_{}_{}_ale_{}_seed_{}.png'.format(estimator_name,
+    #                                                                        type_over,
+    #                                                                        fes,
+    #                                                                        var_name,
+    #                                                                        seed_value))))
+    #     plt.close()
+    # else:
+    #     return fig
 
 
 def plot_area_cis(estimator_name, type_over, fes, seed_value, flag_save_figure=False):
@@ -514,13 +532,19 @@ def save_ci_area_csv(df_ale_var, var_name, fes, type_over, estimator_name, seed_
         'area_ci': np.sum(np.array(list_area_cis))
     }
 
-    df_ci = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'area_ci.csv')))
-    df_ci = df_ci.append(dict_area_ci, ignore_index=True)
-    df_ci.to_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'area_ci.csv')), index=False)
+    path_area_ci = Path.joinpath(consts.PATH_PROJECT_METRICS, 'area_ci.csv')
+    if path_area_ci.exists():
+        df_ci = pd.read_csv(str(path_area_ci))
+        df_ci = pd.concat([df_ci, pd.DataFrame([dict_area_ci])], ignore_index=True)
+        df_ci.to_csv(str(path_area_ci), index=False)
+    else:
+        df_ci = pd.DataFrame([dict_area_ci])
+        df_ci.to_csv(str(path_area_ci), index=False)
 
 
 def plot_corresponding_ale_numerical_feature(df_ale_numerical, df_ale_numerical_raw, var_name,
-                                             estimator_name, fes, type_over, seed_value, flag_save_figure=True):
+                                             estimator_name, fes, type_over, seed_value, ax,
+                                             flag_save_figure=True):
 
     df_ale_numerical = df_ale_numerical.reset_index()
     df_ale_numerical_raw = df_ale_numerical_raw.reset_index()
@@ -530,32 +554,38 @@ def plot_corresponding_ale_numerical_feature(df_ale_numerical, df_ale_numerical_
 
     save_ci_area_csv(df_ale_numerical, var_name, fes, type_over, estimator_name, seed_value)
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 3.1))
+    dict_feature_names = consts.DICT_MAP_ORIGINAL_FEATURES
+    dict_measures = consts.DICT_MEASURES_ORIGINAL_FEATURES
 
+    # fig, ax = plt.subplots(1, 1, figsize=(5, 3.1))
     ax.plot(df_ale_numerical_raw[var_name], df_ale_numerical['eff'], ls='solid', color='blue')
     ax.fill_between(df_ale_numerical_raw[var_name], df_ale_numerical['lowerCI_95%'],
                     df_ale_numerical['upperCI_95%'], label='95% CI',
                     alpha=0.3, color='grey', lw=2)
 
-    ax.set_xlabel(var_name, fontsize=12)
-    # ax.set_ylabel('Effect on prediction', fontsize=12)
+    plt.title(dict_feature_names[var_name])
+    ax.set_xlabel(dict_measures[var_name], fontsize=12)
+    ax.set_ylabel('Effect on prediction', fontsize=12)
+
+    # plt.xlabel(dict_x[var], fontsize=10)
+    # plt.ylabel('Frequency')
 
     plt.xticks(fontsize=11)
     plt.yticks(fontsize=11)
     plt.legend()
     plt.grid(alpha=0.5, linestyle='--')
-    fig.tight_layout()
+    # fig.tight_layout()
 
-    if flag_save_figure:
-        fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'ale',
-                                      '{}_{}_{}_ale_{}_seed_{}.png'.format(estimator_name,
-                                                                           type_over,
-                                                                           fes,
-                                                                           var_name,
-                                                                           seed_value))))
-        plt.close()
-    else:
-        plt.show()
+    # if flag_save_figure:
+    #     fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'ale',
+    #                                   '{}_{}_{}_ale_{}_seed_{}.png'.format(estimator_name,
+    #                                                                        type_over,
+    #                                                                        fes,
+    #                                                                        var_name,
+    #                                                                        seed_value))))
+    #     plt.close()
+    # else:
+    #     plt.show()
 
 
 def plot_scatter_from_model(fes, type_over, estimator, seed_value):
@@ -599,7 +629,6 @@ def plot_shap_mean(fes, type_over, estimator, flag_save_figure=False):
         plt.show()
 
 
-
 def plot_heatmap_selected_features_fes(fes, type_over, flag_save_figure=True):
     df_selected_features = pd.read_csv(str(Path.joinpath(consts.PATH_PROJECT_METRICS, 'selected_features.csv')))
     df_selected_features = df_selected_features.drop(columns=['date'])
@@ -614,20 +643,7 @@ def plot_heatmap_selected_features_fes(fes, type_over, flag_save_figure=True):
     names_vars = df_gk.iloc[:, 3:-1].columns.values
     m_heatmap = df_gk.iloc[:, 3:-1].values.T
     df_heatmap = pd.DataFrame(m_heatmap, columns=names_estimators, index=names_vars)
-    df_heatmap = df_heatmap.rename(index={'age': 'Age',
-                                          'album_0': 'Normoalbuminuria',
-                                          'album_1': 'Microalbuminuria',
-                                          'album_2': 'Macroalbuminuria',
-                                          'dm_duration': 'DM Duration',
-                                          'egfr': 'EGFR',
-                                          'hba1c': 'Hba1c',
-                                          'exercise': 'Exercise',
-                                          'ldl': 'LDL',
-                                          'sbp': 'SBP',
-                                          'sex': 'Sex',
-                                          'smoking': 'Smoking'
-                                        }
-                                    )
+    df_heatmap = df_heatmap.rename(index=consts.DICT_MAP_ORIGINAL_FEATURES)
     df_heatmap = df_heatmap.sort_index(ascending=True)
 
     # fig, ax = plt.subplots(1, 3, figsize=(8, 6))
@@ -687,53 +703,87 @@ def plot_area_cis_average(fes, estimator, flag_save_figure):
         plt.show()
 
 
+def train_ale_plot_cat(df_x_test, model_estimator, var_categorical):
+    ale_discr = ale(
+        X=df_x_test,
+        model=model_estimator,
+        feature=[var_categorical],
+        feature_type="discrete",
+        plot=False,
+        grid_size=10,
+        include_CI=True,
+        C=0.95,
+    )
+    return ale_discr
+
+
+def train_ale_plot_num(df_x_test, df_x_test_raw, model_estimator, var_numerical):
+
+    df_ale_numerical = ale(
+        X=df_x_test,
+        model=model_estimator,
+        feature=[var_numerical],
+        plot=False,
+        feature_type="continuous",
+        grid_size=10,
+        include_CI=True,
+        C=0.95,
+    )
+
+    df_ale_numerical_raw = ale(
+        X=df_x_test_raw,
+        model=model_estimator,
+        feature=[var_numerical],
+        plot=False,
+        feature_type="continuous",
+        grid_size=10,
+        include_CI=True,
+        C=0.95,
+    )
+
+    return df_ale_numerical, df_ale_numerical_raw
+
+
 def plot_ale_features(df_x_test, v_removed_features, model_estimator, df_x_test_raw,
                       list_vars_numerical, list_vars_categorical, estimator_name, fes, type_over, seed_value):
 
     list_vars_numerical = list(set(list_vars_numerical) - set(list(v_removed_features)))
     list_vars_categorical = list(set(list_vars_categorical) - set(list(v_removed_features)))
 
-    for var_numerical in list_vars_numerical:
-        df_ale_numerical = ale(
-            X=df_x_test,
-            model=model_estimator,
-            feature=[var_numerical],
-            plot=False,
-            feature_type="continuous",
-            grid_size=10,
-            include_CI=True,
-            C=0.95,
-        )
+    print('vars-num: ', list_vars_numerical)
+    print('vars-cat: ', list_vars_categorical)
+    print(df_x_test.columns.values)
+    print(df_x_test_raw.columns.values)
 
-        df_ale_numerical_raw = ale(
-            X=df_x_test_raw,
-            model=model_estimator,
-            feature=[var_numerical],
-            plot=False,
-            feature_type="continuous",
-            grid_size=10,
-            include_CI=True,
-            C=0.95,
-        )
+    list_vars = sorted(list_vars_numerical + list_vars_categorical)
 
-        plot_corresponding_ale_numerical_feature(df_ale_numerical, df_ale_numerical_raw, var_numerical,
-                                                 estimator_name, fes, type_over, seed_value)
+    dict_feature_names = consts.DICT_MAP_ORIGINAL_FEATURES
+    dict_swap = {v: k for k, v in dict_feature_names.items()}
+    dict_swap_sorted = {key: value for key, value in sorted(dict_swap.items())}
+    dict_sorted = {v: k for k, v in dict_swap_sorted.items()}
+    list_features_sorted = dict_sorted.keys()
 
-    for var_categorical in list_vars_categorical:
+    # list_features_sorted_filtered = sorted(list(set(list_features_sorted) & set(list_vars)))
 
-        ale_discr = ale(
-            X=df_x_test,
-            model=model_estimator,
-            feature=[var_categorical],
-            feature_type="discrete",
-            plot=False,
-            grid_size=10,
-            include_CI=True,
-            C=0.95,
-        )
+    fig = plt.figure(figsize=(12, 7))
+    sns.set(style='whitegrid')
 
-        plot_corresponding_ale_categorical_feature(ale_discr, var_categorical,
-                                                   estimator_name, fes, type_over, seed_value)
+    for idx, var_name in enumerate(list_features_sorted):
+        ax = plt.subplot(3, 4, idx + 1)
+
+        if var_name in list_vars_numerical:
+            df_ale_num, df_ale_num_raw = train_ale_plot_num(df_x_test, df_x_test_raw, model_estimator, var_name)
+            plot_corresponding_ale_numerical_feature(df_ale_num, df_ale_num_raw, var_name,
+                                                     estimator_name, fes, type_over, seed_value, ax)
+        if var_name in list_vars_categorical:
+            ale_discr = train_ale_plot_cat(df_x_test, model_estimator, var_name)
+            plot_corresponding_ale_categorical_feature(ale_discr, var_name,
+                                                       estimator_name, fes, type_over,
+                                                       seed_value, ax)
+
+    plt.tight_layout()
+    fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'ale_plots_{}_{}_{}.pdf'.format(fes, estimator_name, seed_value))))
+    plt.close()
 
 
 def plot_learning_curves_several_hyperparameters(x_train: np.array,
@@ -1076,3 +1126,45 @@ def plot_area_cis_average_v0(fes, estimator):
         ax.bar_label(container, rotation=90)
 
     plt.show()
+
+
+def plot_all_hists_dataset(df_features, flag_save_figure=False):
+    df_features_encoded = encode_albuminuria(df_features)
+    print(df_features_encoded)
+
+    dict_feature_names = consts.DICT_MAP_ORIGINAL_FEATURES
+    dict_feature_measures = consts.DICT_MEASURES_ORIGINAL_FEATURES
+    dict_swap = {v: k for k, v in dict_feature_names.items()}
+    dict_swap_sorted = {key: value for key, value in sorted(dict_swap.items())}
+    dict_sorted = {v: k for k, v in dict_swap_sorted.items()}
+    list_features = dict_sorted.keys()
+
+    fig = plt.figure(figsize=(12, 7))
+    sns.set(style='whitegrid')
+    for idx, var in enumerate(list_features):
+        plt.subplot(3, 4, idx + 1)
+        sns.histplot(df_features_encoded[var], edgecolor='black', legend=False)
+        plt.title(dict_feature_names[var])
+        plt.xlabel(dict_feature_measures[var], fontsize=10)
+        plt.ylabel('Frequency')
+
+    plt.tight_layout()
+
+    if flag_save_figure:
+        fig.savefig(str(Path.joinpath(consts.PATH_PROJECT_FIGURES, 'all_hists_dataset.pdf')))
+        plt.close()
+    else:
+        plt.show()
+
+
+def encode_albuminuria(df_x):
+
+    df_x_album_binary = pd.get_dummies(df_x.album, prefix='album', dtype=int)
+
+    df_x['album_0'] = df_x_album_binary['album_0.0']
+    df_x['album_1'] = df_x_album_binary['album_1.0']
+    df_x['album_2'] = df_x_album_binary['album_2.0']
+
+    df_x = df_x.drop(columns=['album'])
+
+    return df_x

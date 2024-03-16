@@ -54,7 +54,6 @@ def load_model_estimator(fes, type_over, estimator, seed_value, x_train, y_train
         return loaded_model
 
 
-
 def get_categorical_numerical_names(df_data: pd.DataFrame, bbdd_name: str) -> (list, list):
 
     df_info = identify_type_features(df_data)
@@ -143,7 +142,6 @@ def load_train_test_partitions(filename_pattern, seed_value):
     df_x_test_pre = df_x_test_all_pre.drop(columns=['label'])
 
     return df_x_train_pre, y_train, df_x_test_pre, y_test, df_x_train_raw, df_x_test_raw, dict_list_patients
-
 
 
 def load_raw_dataset(bbdd_name: str) -> pd.DataFrame:
