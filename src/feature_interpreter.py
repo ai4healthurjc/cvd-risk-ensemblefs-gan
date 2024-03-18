@@ -27,7 +27,7 @@ def show_regression_metrics():
 
 
 def parse_arguments(parser):
-    parser.add_argument('--estimator', default='dt', type=str)
+    parser.add_argument('--estimator', default='mlp', type=str)
     parser.add_argument('--fes', default='fes4', type=str)
     parser.add_argument('--type_over', default='wo', type=str)
     parser.add_argument('--batch_size', default=50, type=int)

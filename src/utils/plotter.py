@@ -461,7 +461,7 @@ def plot_corresponding_ale_categorical_feature(df_ale_cat, var_name,
 
     plt.title(dict_feature_names[var_name])
     ax.set_xlabel(dict_measures[var_name], fontsize=12)
-    ax.set_ylabel('Effect on prediction', fontsize=12)
+    ax.set_ylabel('Effect on prediction', fontsize=10)
 
     ax.plot([df_ale_cat.iloc[0, 0], df_ale_cat.iloc[1, 0]],
             [df_ale_cat.iloc[0, 1], df_ale_cat.iloc[1, 1]],
@@ -565,7 +565,7 @@ def plot_corresponding_ale_numerical_feature(df_ale_numerical, df_ale_numerical_
 
     plt.title(dict_feature_names[var_name])
     ax.set_xlabel(dict_measures[var_name], fontsize=12)
-    ax.set_ylabel('Effect on prediction', fontsize=12)
+    ax.set_ylabel('Effect on prediction', fontsize=10)
 
     # plt.xlabel(dict_x[var], fontsize=10)
     # plt.ylabel('Frequency')
@@ -719,6 +719,8 @@ def train_ale_plot_cat(df_x_test, model_estimator, var_categorical):
 
 def train_ale_plot_num(df_x_test, df_x_test_raw, model_estimator, var_numerical):
 
+    print('train_ale_plot_num: ', var_numerical)
+
     df_ale_numerical = ale(
         X=df_x_test,
         model=model_estimator,
@@ -761,8 +763,9 @@ def plot_ale_features(df_x_test, v_removed_features, model_estimator, df_x_test_
     dict_swap = {v: k for k, v in dict_feature_names.items()}
     dict_swap_sorted = {key: value for key, value in sorted(dict_swap.items())}
     dict_sorted = {v: k for k, v in dict_swap_sorted.items()}
-    list_features_sorted = dict_sorted.keys()
+    list_features_sorted = list(dict_sorted.keys())
 
+    print('xxxxxx: ', list_features_sorted)
     # list_features_sorted_filtered = sorted(list(set(list_features_sorted) & set(list_vars)))
 
     fig = plt.figure(figsize=(12, 7))
